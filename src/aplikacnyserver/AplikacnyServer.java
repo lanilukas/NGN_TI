@@ -7,10 +7,13 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Timer;
 /**
  *
  * @author ivana
  */
+
+
 class databaza_struct
 {
     public String adresa;
@@ -18,16 +21,18 @@ class databaza_struct
     public int zs;  //zapadne slovensko
     public int ss;  //stredne slovensko
     public int vs;  //vychodne slovensko
-    public int m1;  //moznost1 - hliadky
-    public int m2;  //moznost2 - radary
-    public int m3;  //moznost3 - prerabky
+    public int act;  // aktualne obmedzenia
+    public int stat;  //staticke radary
+    public int mob;  // mobilne radary
+    public int road;   //cestne kontroly
+    public int longt;  //dlhodobe obmedzenia
 }
 
 public class AplikacnyServer {
 
     //public static databaza_struct[] databaza = new databaza_struct[10];
     public static ArrayList<databaza_struct> databaza = new ArrayList<databaza_struct>();
-   
+    public static ArrayList<TItype> info = new ArrayList<TItype>();
       
     public static boolean is_in_db(String zdroj) {
        
@@ -66,20 +71,20 @@ public class AplikacnyServer {
     public static String create_sip_msg(String to, String obsah) {
         //vytvori SIP spravu s danym obsahom a adresatom
         String info;
-        info = "MESSAGE " + to + " SIP/2.0\n";
-        info = info + "Via: SIP/2.0/UDP 10.0.2.15:5061\n";
-        info = info + "From: \"ADMIN\" <sip:admin@open-ims.test>\n";
-        info = info + "To: <" + to + ">\n";
-        info = info + "Call-ID: 222222222\n";
-        info = info + "CSeq: 20 MESSAGE\n";
-        info = info + "Content-Type: text/plain\n";
-        info = info + "Max-Forwards: 70\n";
-        info = info + "User-Agent: UCT IMS Client\n";
+        info = "MESSAGE " + to + " SIP/2.0\r\n";
+        info = info + "Via: SIP/2.0/UDP 10.0.2.15:5061\r\n";
+        info = info + "From: \"ADMIN\" <sip:admin@open-ims.test>\r\n";
+        info = info + "To: <" + to + ">\r\n";
+        info = info + "Call-ID: 222222222\r\n";
+        info = info + "CSeq: 20 MESSAGE\r\n";
+        info = info + "Content-Type: text/plain\r\n";
+        info = info + "Max-Forwards: 70\r\n";
+        info = info + "User-Agent: UCT IMS Client\r\n";
         //info = info + "P-Preferred Identity: \"Alice\" <alice@open-ims.test>\n";
-        info = info + "P-Access-Network-Info: IEEE-802.11a\n";
-        info = info + "Content-Length: " + obsah.length() + "\n";
-        info = info + "\n" + obsah + "\n";
-        info = info + "\n";
+        info = info + "P-Access-Network-Info: IEEE-802.11a\r\n";
+        info = info + "Content-Length: " + obsah.length() + "\r\n";
+        info = info + "\r\n" + obsah + "\r\n";
+        info = info + "\r\n";
         return info;
     }
    
@@ -125,14 +130,20 @@ public class AplikacnyServer {
                 if (parameter.equals("VS")) {
                     next.vs = 1;
                 }
-                if (parameter.equals("m1")) {
-                    next.m1 = 1;
+                if (parameter.equals("1")) {
+                    next.act = 1;
                 }
-                if (parameter.equals("m2")) {
-                    next.m2 = 1;
+                if (parameter.equals("2")) {
+                    next.stat = 1;
                 }
-                if (parameter.equals("m3")) {
-                    next.m3 = 1;
+                if (parameter.equals("3")) {
+                    next.mob = 1;
+                }
+                if (parameter.equals("4")) {
+                    next.road = 1;
+                }
+                if (parameter.equals("5")) {
+                    next.longt = 1;
                 }
                 return;
             }
@@ -146,8 +157,9 @@ public class AplikacnyServer {
             novy_zaznam = (databaza_struct) e.next();
             System.out.println(novy_zaznam.adresa + ", zs:" + novy_zaznam.zs
                     + ", ss: " + novy_zaznam.ss + ", vs: " + novy_zaznam.vs
-                    + ", m1: " + novy_zaznam.m1 + ", m2: " + novy_zaznam.m2
-                    + ", m3: " + novy_zaznam.m3);
+                    + ", act:: " + novy_zaznam.act + ", stat: " + novy_zaznam.stat
+                    + ", mob: " + novy_zaznam.mob + ", road: " + novy_zaznam.road
+                    + ", longt: " + novy_zaznam.longt);
 
         }
     }
@@ -169,14 +181,20 @@ public class AplikacnyServer {
                 if (novy_zaznam.vs == 1) {
                     sprava = sprava + "Vychodne Slovensko\n";
                 }
-                if (novy_zaznam.m1 == 1) {
-                    sprava = sprava + "Hliadky\n";
+                if (novy_zaznam.act == 1) {
+                    sprava = sprava + "Aktualne obmedzenia\n";
                 }
-                if (novy_zaznam.m2 == 1) {
-                    sprava = sprava + "Radary\n";
+                if (novy_zaznam.stat == 1) {
+                    sprava = sprava + "Staticke radary\n";
                 }
-                if (novy_zaznam.m3 == 1) {
-                    sprava = sprava + "Obmedzenia\n";
+                if (novy_zaznam.mob == 1) {
+                    sprava = sprava + "Mobilne radary\n";
+                }
+                if (novy_zaznam.road == 1) {
+                    sprava = sprava + "Cestne kontroly\n";
+                }
+                if (novy_zaznam.longt == 1) {
+                    sprava = sprava + "Dlhodobe obmedzenia\n";
                 }
                 return sprava;
             }
@@ -184,7 +202,7 @@ public class AplikacnyServer {
         return "";
     }
    
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SocketException {
         // TODO code application logic here
         try{
             DatagramSocket ServerSocket = new DatagramSocket(22222);
@@ -192,8 +210,26 @@ public class AplikacnyServer {
             String reg_sprava = new String();
             databaza_struct novy_zaznam;
            
-            while (true)
-            {
+            int timer_control = 0;
+           
+            //demo informacie
+            TItype nove_info = new TItype();
+            nove_info.region= "ZSVK";
+            nove_info.name = "aktualne obmedzenie1";
+            nove_info.description = "desc1";
+            nove_info.type = RType.Actual;
+           
+            info.add(nove_info);
+           
+            TItype nove_info2 = new TItype();
+            nove_info2.region = "SSVK";
+            nove_info2.description= "desc2";
+            nove_info2.name = "staticky radar";
+            nove_info2.type = RType.StaticST;
+           
+            info.add(nove_info2);
+           
+            while (true) {
                
                 byte[] receiveData = new byte[1024];
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -205,6 +241,13 @@ public class AplikacnyServer {
                 ip = receivePacket.getAddress();
                 int port;
                 port = receivePacket.getPort();
+               
+                if (timer_control == 0){
+                    Timer time = new Timer();
+                    Scheduled_send scheduled_task = new Scheduled_send(databaza, ip, port, info);
+                    time.schedule(scheduled_task, 0, 10000);
+                    timer_control = 1;
+                }
                
                 //parsovanie do pola
                 String[] pole_riadkov;
@@ -263,46 +306,29 @@ public class AplikacnyServer {
 
                             String[] sendData = new String[pole_riadkov.length];
                             sendData = pole_riadkov;
-                            sendData[0] = "SIP/2.0 200 OK\n";
+                            sendData[0] = "SIP/2.0 200 OK\r\n";
 
                             //vytvorim novy socket na odpoved
+                            String tmp_str="";
+                            byte[] sendData_bytes;
                             for (int x=0; x < pole_riadkov.length; x++){
                                 riadok_spravy = pole_riadkov[x].split(" ");
-
+                                if(pole_riadkov[x].isEmpty()) break;
                                 typ = riadok_spravy[0].trim();
                                 if (typ.equals("Content-Length:")) {
                                     //System.out.println("content");
-                                    byte[] sendData_bytes;
-                                    String tmp_str="";
+                                   
+                                   
                                     String help_str = "";
-                                    for (int jj=0; jj<x+1; jj++) {
-                                        if (jj==x) {
-                                            tmp_str = tmp_str+ "Content-Length: 0\n";
-                                        } else {
-                                            help_str = sendData[jj].split(" ")[0];
-                                            //System.out.println("help_str: "+ help_str);
-                                            if (help_str.equals("Content-Type:")) {
-
-                                            } else {
-                                                if (help_str.equals("Max-Forwards:")) {
-
-                                                } else {
-                                                    if (help_str.equals("P-Access-Network-Info:")) {
-
-                                                    } else{
-                                                        if (help_str.equals("Route:")) {
-
-                                                        } else{
-                                                        //System.out.println(" else");
-                                                            tmp_str = tmp_str + sendData[jj];
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            //tmp_str = tmp_str + sendData[jj];
-                                        }
-                                    }
-                                    tmp_str = tmp_str + "\n";
+                                    //for (int jj=0; jj<x+1; jj++) {
+                                    //    if (jj==x) {
+                                       tmp_str = tmp_str + "Content-Length: 0\r\n";
+                                }else{
+                                          
+                                      tmp_str = tmp_str + sendData[x].trim() + "\r\n";
+                                }
+                            } //koniec kopirovania povodnej spravy
+                                    tmp_str = tmp_str  + "\r\n";
                                     //System.out.println("TMP str:");
                                     //System.out.println(tmp_str);
                                     sendData_bytes = tmp_str.getBytes();
@@ -310,13 +336,11 @@ public class AplikacnyServer {
 
                                     //poslem spat udp datagram
 
-                                    DatagramSocket s = new DatagramSocket();
+                                    //DatagramSocket s = new DatagramSocket();
                                     DatagramPacket sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
-                                    s.send(sendPacket);
+                                    ServerSocket.send(sendPacket);
                                     //System.out.println("poslane");
-                                    s.close();
-                                }
-                            }
+                                    //s.close();
 
                             //System.out.println("text/plain: ");
                            
@@ -330,14 +354,14 @@ public class AplikacnyServer {
 
                             }
                             //System.out.println("text spravy: " + text_spravy);
-                        }
+                        //} //koniec message
                    
                         String tmp_add_subscribe = "";
                         if (text_spravy.length() > 3) {
                             tmp_add_subscribe = text_spravy.substring(0,3);
-                                   System.out.println("viac ako 3 dlzka");
-                                   System.out.println("tmp:" + tmp_add_subscribe);
-;                            if (tmp_add_subscribe.equals("ADD")) {
+                                   //System.out.println("viac ako 3 dlzka");
+                                   //System.out.println("tmp:" + tmp_add_subscribe);
+                            if (tmp_add_subscribe.equals("ADD")) {
                                 if (is_in_db(from_adr)) {
                                     //pridanie noveho parametra k sluzbe
                                     String[] prijate_pole;
@@ -356,13 +380,19 @@ public class AplikacnyServer {
                                             update_par_db(from_adr,"VS");
                                         }
                                         if (prijate_pole[g].equals("1")) {
-                                            update_par_db(from_adr,"m1");
+                                            update_par_db(from_adr,"1");
                                         }
                                         if (prijate_pole[g].equals("2")) {
-                                            update_par_db(from_adr,"m2");
+                                            update_par_db(from_adr,"2");
                                         }
                                         if (prijate_pole[g].equals("3")) {
-                                            update_par_db(from_adr,"m3");
+                                            update_par_db(from_adr,"3");
+                                        }
+                                        if (prijate_pole[g].equals("4")) {
+                                            update_par_db(from_adr,"4");
+                                        }
+                                        if (prijate_pole[g].equals("5")) {
+                                            update_par_db(from_adr,"5");
                                         }
                                     }
 
@@ -375,15 +405,17 @@ public class AplikacnyServer {
                                     obsah_spravy = "Pridanie parametrov uspesne.\n" + stav;
                                     message = create_sip_msg(adresat, obsah_spravy);
 
-                                    byte[] sendData_bytes;
+                                    //byte[] sendData_bytes;
 
                                     sendData_bytes = message.getBytes();
-                                    DatagramSocket s = new DatagramSocket();
-                                    DatagramPacket sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
-                                    s.send(sendPacket);
-                                    System.out.println("poslane potvrdenie add parametrov");
+                                    //DatagramSocket s = new DatagramSocket();
+                                    //DatagramPacket sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
+                                    sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
+                                   
+                                    ServerSocket.send(sendPacket);
+                                    //System.out.println("poslane potvrdenie add parametrov");
 
-                                    s.close();
+                                    //s.close();
                                 }
                             }
                         }
@@ -421,26 +453,29 @@ public class AplikacnyServer {
                                 //vrati string s celou spravou a obsahom v parametri
                                 message = create_sip_msg(adresat, "Boli ste uspesne pripojeny k sluzbe :) \nVyber si kraj: \n"
                                         + "Zapadne Slovensko: ZS\nStredne Slovensko: SS\n"
-                                        + "Vychodne Slovensko: VS\nHliadky: 1\nRadary: 2\nObmedzenia: 3\n"
-                                        + "\nVZOR:\nZS 1 2\n(spravy o hliadkach a radaroch na zapadnom Slovensku)\n");
+                                        + "Vychodne Slovensko: VS\nAktualne obmedzenia: 1\nStaticke radary: 2\n"
+                                        + "Mobilne radary: 3\nCestne kontroly: 4\nDlhodobe obmedzenia: 5\n"
+                                        + "\nVZOR:\nZS 1 2\n(spravy o aktualnych obmedzeniach a statickych radaroch na zapadnom Slovensku)\n");
                                
                                 //System.out.println("posielam ano");
                                 //System.out.println(info);
                                
-                                byte[] sendData_bytes;
+                                //byte[] sendData_bytes;
                                 //System.out.println("from_adr; " + from_adr);
                                 sendData_bytes = message.getBytes();
-                                DatagramSocket s = new DatagramSocket();
-                                DatagramPacket sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
-                                s.send(sendPacket);
-                                System.out.println("poslane vyber");
-                                s.close();
+                                //DatagramSocket s = new DatagramSocket();
+                                //DatagramPacket
+                                        sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
+                                ServerSocket.send(sendPacket);
+                                //System.out.println("poslane vyber");
+                                //s.close();
                                
                                 //zapisem do db ze bol poslany vyber
                                 novy_zaznam.poslany_vyber = 1;
                                 databaza.add(novy_zaznam);
                                
                             } else {
+                                /*
                                 // klient uz je v databaze
                                 //zatial iba info sprava
                                 String message = "";
@@ -463,11 +498,11 @@ public class AplikacnyServer {
                                 s.send(sendPacket);
                                 System.out.println("poslane nie");
                                 s.close();
-                               
+                                */
                             }
                            
                             continue;
-                        } else if ((!text_spravy.equals("")) && (!text_spravy.substring(0,2).equals("ADD"))){
+                        } else if (!text_spravy.equals("")){
                         //nie je to subscribe
                            
                             if (text_spravy.equals("UNSUBSCRIBE")) {
@@ -491,27 +526,24 @@ public class AplikacnyServer {
                             //System.out.println(from +  to);
                             //vrati string s celou spravou a obsahom v parametri
                             message = create_sip_msg(adresat, "Odhlasenie zo sluzby prebehlo uspesne.");
-                            byte[] sendData_bytes;
+                            //byte[] sendData_bytes;
                             //System.out.println("from_adr; " + from_adr);
                             sendData_bytes = message.getBytes();
-                            DatagramSocket s = new DatagramSocket();
-                            DatagramPacket sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
-                            s.send(sendPacket);
-                            System.out.println("poslane odhlasenie");
-                            s.close();
+                            //DatagramSocket s = new DatagramSocket();
+                            //DatagramPacket
+                                    sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
+                            ServerSocket.send(sendPacket);
+                            //System.out.println("poslane odhlasenie");
+                            //s.close();
                            
                             continue;
                         } else {
-                           
+                            
                             //rozparsovanie prijatej spravy - odpoved na ponuku
-
+                            System.out.println("spracovavam odpoved na menu");
                             String[] prijate_pole;
                             prijate_pole = text_spravy.split(" ");
 
-
-                            //if (text_spravy.equals("1") || text_spravy.equals("2") || text_spravy.equals("3")) {
-                                //asi prisla odpoved na vyzvu
-                                //check, ci bola vyzva poslana
 
                                 //najdem odosielatela v db
                                 if (is_in_db(from_adr)) {
@@ -519,7 +551,7 @@ public class AplikacnyServer {
                                     //a ak ano, zmeni parameter pre daneho usera
                                     int prvy = 0;
                                     prvy = challenge_sent(from_adr);
-                                    System.out.println("je prvy: " + prvy + ", " + text_spravy);
+                                    //System.out.println("je prvy: " + prvy + ", " + text_spravy);
 
                                     if (prvy ==1) {
                                         //user odpoveda prvy krat
@@ -537,13 +569,19 @@ public class AplikacnyServer {
                                                 update_par_db(from_adr,"VS");
                                             }
                                             if (prijate_pole[g].equals("1")) {
-                                                update_par_db(from_adr,"m1");
+                                                update_par_db(from_adr,"1");
                                             }
                                             if (prijate_pole[g].equals("2")) {
-                                                update_par_db(from_adr,"m2");
+                                                update_par_db(from_adr,"2");
                                             }
                                             if (prijate_pole[g].equals("3")) {
-                                                update_par_db(from_adr,"m3");
+                                                update_par_db(from_adr,"3");
+                                            }
+                                            if (prijate_pole[g].equals("4")) {
+                                                update_par_db(from_adr,"4");
+                                            }
+                                            if (prijate_pole[g].equals("5")) {
+                                                update_par_db(from_adr,"5");
                                             }
                                         //update parametru v db
                                         //update_par_db(from_adr, text_spravy);
@@ -557,14 +595,15 @@ public class AplikacnyServer {
                                         String obsah_spravy = "Nastavenie parametrov uspesne.\n" + stav;
                                         message = create_sip_msg(adresat, obsah_spravy);
 
-                                        byte[] sendData_bytes;
+                                        //byte[] sendData_bytes;
 
                                         sendData_bytes = message.getBytes();
-                                        DatagramSocket s = new DatagramSocket();
-                                        DatagramPacket sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
-                                        s.send(sendPacket);
-                                        System.out.println("poslane potvrdenie parametrov");
-                                        s.close();
+                                        //DatagramSocket s = new DatagramSocket();
+                                        //DatagramPacket
+                                                sendPacket = new DatagramPacket(sendData_bytes, sendData_bytes.length, ip, port);
+                                        ServerSocket.send(sendPacket);
+                                        //System.out.println("poslane potvrdenie parametrov");
+                                        //s.close();
                                 }
                                     continue;
                             }
@@ -574,10 +613,11 @@ public class AplikacnyServer {
                        
                        
                     }
-                }
-                   
                
+                    }
+                }
             }
+           
             }catch (IOException e) {}
            
         }
